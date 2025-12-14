@@ -10,6 +10,7 @@ load_dotenv()
 
 # Import routers
 from routers import auth, chat, files
+from services.database import create_tables
 
 app = FastAPI(
     title="Kris Bot API",
@@ -20,9 +21,9 @@ app = FastAPI(
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:3001"],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -42,6 +43,11 @@ async def root():
 @app.get("/health")
 async def health_check():
     return {"status": "healthy", "message": "API is operational"}
+
+@app.on_event("startup")
+async def startup_event():
+    # Create database tables on startup
+    create_tables()
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))

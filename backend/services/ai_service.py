@@ -1,5 +1,4 @@
 import os
-import openai
 from typing import List, Dict
 import asyncio
 
@@ -7,9 +6,6 @@ class AIService:
     def __init__(self):
         self.openai_api_key = os.getenv("OPENAI_API_KEY")
         self.anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
-        
-        if self.openai_api_key:
-            openai.api_key = self.openai_api_key
     
     async def get_response(self, messages: List[Dict[str, str]]) -> str:
         """Get AI response from available service."""
@@ -25,7 +21,10 @@ class AIService:
     async def _get_openai_response(self, messages: List[Dict[str, str]]) -> str:
         """Get response from OpenAI GPT."""
         try:
-            response = await openai.ChatCompletion.acreate(
+            from openai import OpenAI
+            client = OpenAI(api_key=self.openai_api_key)
+            
+            response = client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=messages,
                 max_tokens=1000,

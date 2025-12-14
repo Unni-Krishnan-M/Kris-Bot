@@ -35,7 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const token = localStorage.getItem('token')
       if (token) {
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
-        const response = await axios.get('/api/auth/me')
+        const response = await axios.get('http://localhost:8000/api/auth/me')
         setUser(response.data)
       }
     } catch (error) {
@@ -52,22 +52,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       formData.append('username', email)
       formData.append('password', password)
 
-      const response = await axios.post('/api/auth/token', formData)
+      const response = await axios.post('http://localhost:8000/api/auth/token', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
       const { access_token } = response.data
 
       localStorage.setItem('token', access_token)
       axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`
 
-      const userResponse = await axios.get('/api/auth/me')
+      const userResponse = await axios.get('http://localhost:8000/api/auth/me')
       setUser(userResponse.data)
     } catch (error) {
+      console.error('Login error:', error)
       throw new Error('Login failed')
     }
   }
 
   const register = async (email: string, username: string, password: string) => {
     try {
-      await axios.post('/api/auth/register', {
+      await axios.post('http://localhost:8000/api/auth/register', {
         email,
         username,
         password
@@ -76,6 +81,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Auto-login after registration
       await login(email, password)
     } catch (error) {
+      console.error('Registration error:', error)
       throw new Error('Registration failed')
     }
   }

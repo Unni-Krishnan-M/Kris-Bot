@@ -28,5 +28,6 @@ def get_db():
 
 def create_tables():
     """Create all tables in the database."""
-    from models.user import Base as UserBase
-    UserBase.metadata.create_all(bind=engine)
+    # Import all models to ensure they're registered
+    from models.user import User
+    Base.metadata.create_all(bind=engine)

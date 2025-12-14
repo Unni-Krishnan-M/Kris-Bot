@@ -40,7 +40,7 @@ export default function ChatInterface() {
     setLoading(true)
 
     try {
-      const response = await axios.post('/api/chat/send', {
+      const response = await axios.post('http://localhost:8000/api/chat/send', {
         message: userMessage.content,
         conversation_history: messages.map(msg => ({
           role: msg.role,
