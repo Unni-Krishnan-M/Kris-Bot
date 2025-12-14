@@ -1,13 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 import os
 
 from models.user import User, UserCreate, UserResponse, UserLogin, Token, TokenData
-from services.database import get_db
 
 router = APIRouter()
 
@@ -35,7 +33,7 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+async def get_current_user(token: str = Depends(oauth2_scheme)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -50,24 +48,24 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
     except JWTError:
         raise credentials_exception
     
-    user = db.query(User).filter(User.email == token_data.email).first()
+    user = await User.find_one(User.email == token_data.email)
     if user is None:
         raise credentials_exception
     return user
 
 @router.post("/register", response_model=UserResponse)
-async def register(user: UserCreate, db: Session = Depends(get_db)):
+async def register(user: UserCreate):
     # Check if user exists
-    db_user = db.query(User).filter(User.email == user.email).first()
-    if db_user:
+    existing_user = await User.find_one(User.email == user.email)
+    if existing_user:
         raise HTTPException(
             status_code=400,
             detail="Email already registered"
         )
     
     # Check if username exists
-    db_user = db.query(User).filter(User.username == user.username).first()
-    if db_user:
+    existing_username = await User.find_one(User.username == user.username)
+    if existing_username:
         raise HTTPException(
             status_code=400,
             detail="Username already taken"
@@ -75,20 +73,25 @@ async def register(user: UserCreate, db: Session = Depends(get_db)):
     
     # Create new user
     hashed_password = get_password_hash(user.password)
-    db_user = User(
+    new_user = User(
         email=user.email,
         username=user.username,
         hashed_password=hashed_password
     )
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
+    await new_user.insert()
     
-    return db_user
+    return UserResponse(
+        _id=str(new_user.id),
+        email=new_user.email,
+        username=new_user.username,
+        is_active=new_user.is_active,
+        is_verified=new_user.is_verified,
+        created_at=new_user.created_at
+    )
 
 @router.post("/token", response_model=Token)
-async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == form_data.username).first()
+async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
+    user = await User.find_one(User.email == form_data.username)
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -103,4 +106,11 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
 
 @router.get("/me", response_model=UserResponse)
 async def read_users_me(current_user: User = Depends(get_current_user)):
-    return current_user
+    return UserResponse(
+        _id=str(current_user.id),
+        email=current_user.email,
+        username=current_user.username,
+        is_active=current_user.is_active,
+        is_verified=current_user.is_verified,
+        created_at=current_user.created_at
+    )

@@ -14,6 +14,14 @@ if ! command -v node &> /dev/null; then
     exit 1
 fi
 
+# Check if MongoDB is running
+if ! pgrep -x "mongod" > /dev/null; then
+    echo "⚠️  MongoDB is not running. Please start MongoDB:"
+    echo "   sudo systemctl start mongod"
+    echo "   or: brew services start mongodb-community"
+    echo ""
+fi
+
 # Create virtual environment for backend if it doesn't exist
 if [ ! -d "backend/venv" ]; then
     echo "📦 Creating Python virtual environment..."
@@ -28,9 +36,23 @@ cd backend
 source venv/bin/activate
 pip install -r requirements.txt
 
-# Create database tables
-echo "🗄️ Setting up database..."
-python -c "from services.database import create_tables; create_tables()"
+# Test MongoDB connection
+echo "🗄️ Testing MongoDB connection..."
+python -c "
+import asyncio
+from services.database import connect_to_mongo, close_mongo_connection
+
+async def test_connection():
+    try:
+        await connect_to_mongo()
+        print('✅ MongoDB connection successful')
+        await close_mongo_connection()
+    except Exception as e:
+        print(f'❌ MongoDB connection failed: {e}')
+        print('Please make sure MongoDB is running on localhost:27017')
+
+asyncio.run(test_connection())
+"
 
 # Create .env file if it doesn't exist
 if [ ! -f ".env" ]; then

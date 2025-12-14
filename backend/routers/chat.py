@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import List, Optional
 import json
@@ -7,7 +6,6 @@ import os
 
 from models.user import User
 from routers.auth import get_current_user
-from services.database import get_db
 from services.ai_service import AIService
 
 router = APIRouter()
@@ -27,8 +25,7 @@ class ChatResponse(BaseModel):
 @router.post("/send", response_model=ChatResponse)
 async def send_message(
     chat_request: ChatRequest,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_user)
 ):
     try:
         # Initialize AI service
@@ -47,7 +44,7 @@ async def send_message(
         
         return ChatResponse(
             response=ai_response,
-            conversation_id=f"conv_{current_user.id}_{len(messages)}"
+            conversation_id=f"conv_{str(current_user.id)}_{len(messages)}"
         )
         
     except Exception as e:
@@ -55,8 +52,7 @@ async def send_message(
 
 @router.get("/history")
 async def get_chat_history(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_user)
 ):
     # This would typically fetch from a database
     # For now, return empty history
@@ -65,8 +61,7 @@ async def get_chat_history(
 @router.delete("/history/{conversation_id}")
 async def delete_conversation(
     conversation_id: str,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_user)
 ):
     # Implementation for deleting conversation history
     return {"message": "Conversation deleted successfully"}

@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
-from sqlalchemy.orm import Session
 from typing import List
 import os
 import shutil
@@ -7,7 +6,6 @@ from pathlib import Path
 
 from models.user import User
 from routers.auth import get_current_user
-from services.database import get_db
 
 router = APIRouter()
 
@@ -20,8 +18,7 @@ Path(UPLOAD_DIR).mkdir(exist_ok=True)
 @router.post("/upload")
 async def upload_file(
     file: UploadFile = File(...),
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_user)
 ):
     # Check file size
     if file.size > MAX_FILE_SIZE:
@@ -51,8 +48,7 @@ async def upload_file(
 
 @router.get("/list")
 async def list_files(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_user)
 ):
     user_dir = Path(UPLOAD_DIR) / str(current_user.id)
     
@@ -73,8 +69,7 @@ async def list_files(
 @router.delete("/{filename}")
 async def delete_file(
     filename: str,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_user)
 ):
     user_dir = Path(UPLOAD_DIR) / str(current_user.id)
     file_path = user_dir / filename

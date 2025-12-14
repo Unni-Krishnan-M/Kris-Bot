@@ -10,7 +10,7 @@ load_dotenv()
 
 # Import routers
 from routers import auth, chat, files
-from services.database import create_tables
+from services.database import connect_to_mongo, close_mongo_connection
 
 app = FastAPI(
     title="Kris Bot API",
@@ -46,8 +46,13 @@ async def health_check():
 
 @app.on_event("startup")
 async def startup_event():
-    # Create database tables on startup
-    create_tables()
+    # Connect to MongoDB on startup
+    await connect_to_mongo()
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    # Close MongoDB connection on shutdown
+    await close_mongo_connection()
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))

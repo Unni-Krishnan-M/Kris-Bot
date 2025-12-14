@@ -19,6 +19,7 @@ A full-stack AI-powered chatbot application built with FastAPI (Python) backend 
 - Python 3.8 or higher
 - Node.js 18 or higher
 - npm or yarn
+- MongoDB 4.4 or higher (running on localhost:27017)
 
 ### Installation
 
@@ -74,7 +75,8 @@ Create a `.env` file in the `backend` directory:
 
 ```env
 # Database
-DATABASE_URL=sqlite:///./kris_bot.db
+MONGODB_URL=mongodb://localhost:27017
+DATABASE_NAME=kris_bot
 
 # JWT
 SECRET_KEY=your-secret-key-here
@@ -151,11 +153,15 @@ kris-bot/
    npm install
    ```
 
-3. **Database issues:**
+3. **MongoDB connection issues:**
    ```bash
-   cd backend
-   rm -f kris_bot.db
-   python -c "from services.database import create_tables; create_tables()"
+   # Make sure MongoDB is running
+   sudo systemctl start mongod
+   # Or on macOS with Homebrew
+   brew services start mongodb-community
+   
+   # Check if MongoDB is accessible
+   mongosh --eval "db.adminCommand('ismaster')"
    ```
 
 ## Contributing

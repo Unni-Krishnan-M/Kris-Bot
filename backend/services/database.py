@@ -1,33 +1,43 @@
-from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
 import os
+from motor.motor_asyncio import AsyncIOMotorClient
+from beanie import init_beanie
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# Database URL - fallback to SQLite for development
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./kris_bot.db")
+# MongoDB configuration
+MONGODB_URL = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
+DATABASE_NAME = os.getenv("DATABASE_NAME", "kris_bot")
 
-# Handle SQLite URL format
-if DATABASE_URL.startswith("sqlite"):
-    engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
-else:
-    engine = create_engine(DATABASE_URL)
+# Global variables
+mongodb_client: AsyncIOMotorClient = None
+database = None
 
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-Base = declarative_base()
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-def create_tables():
-    """Create all tables in the database."""
-    # Import all models to ensure they're registered
+async def connect_to_mongo():
+    """Create database connection"""
+    global mongodb_client, database
+    mongodb_client = AsyncIOMotorClient(MONGODB_URL)
+    database = mongodb_client[DATABASE_NAME]
+    
+    # Initialize beanie with all models
     from models.user import User
-    Base.metadata.create_all(bind=engine)
+    from models.conversation import Conversation
+    await init_beanie(database=database, document_models=[User, Conversation])
+    
+    print(f"Connected to MongoDB at {MONGODB_URL}")
+
+async def close_mongo_connection():
+    """Close database connection"""
+    global mongodb_client
+    if mongodb_client:
+        mongodb_client.close()
+        print("Disconnected from MongoDB")
+
+def get_database():
+    """Get database instance"""
+    return database
+
+# For compatibility with existing code
+async def get_db():
+    """Async generator for database dependency"""
+    yield database

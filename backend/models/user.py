@@ -1,25 +1,26 @@
-from sqlalchemy import Column, Integer, String, DateTime, Boolean
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.sql import func
-from pydantic import BaseModel, EmailStr
+from beanie import Document, Indexed
+from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 from datetime import datetime
+from pymongo import IndexModel
 
-Base = declarative_base()
-
-class User(Base):
-    __tablename__ = "users"
+class User(Document):
+    email: Indexed(EmailStr, unique=True)
+    username: Indexed(str, unique=True)
+    hashed_password: str
+    is_active: bool = True
+    is_verified: bool = False
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: Optional[datetime] = None
     
-    id = Column(Integer, primary_key=True, index=True)
-    email = Column(String, unique=True, index=True, nullable=False)
-    username = Column(String, unique=True, index=True, nullable=False)
-    hashed_password = Column(String, nullable=False)
-    is_active = Column(Boolean, default=True)
-    is_verified = Column(Boolean, default=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    class Settings:
+        name = "users"
+        indexes = [
+            IndexModel("email", unique=True),
+            IndexModel("username", unique=True),
+        ]
 
-# Pydantic models
+# Pydantic models for API
 class UserBase(BaseModel):
     email: EmailStr
     username: str
@@ -28,13 +29,13 @@ class UserCreate(UserBase):
     password: str
 
 class UserResponse(UserBase):
-    id: int
+    id: str = Field(alias="_id")
     is_active: bool
     is_verified: bool
     created_at: datetime
     
     class Config:
-        from_attributes = True
+        populate_by_name = True
 
 class UserLogin(BaseModel):
     email: EmailStr
