@@ -1,0 +1,22 @@
+{
+  "name": "kris-bot",
+  "version": "1.0.0",
+  "description": "Professional multimodal AI assistant for conversations, images, videos, and PDFs",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
+    "backend": "cd backend && npm run dev",
+    "frontend": "cd frontend && npm start",
+    "build": "cd frontend && npm run build",
+    "install-backend": "cd backend && npm install",
+    "install-frontend": "cd frontend && npm install",
+    "install-all": "npm run install-backend && npm run install-frontend",
+    "start": "cd backend && npm start"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  },
+  "keywords": ["ai", "chatbot", "multimodal", "react", "nodejs"],
+  "author": "Kris Bot Team",
+  "license": "MIT"
+}
